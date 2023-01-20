@@ -667,7 +667,7 @@ int main()
 		system("Color 07");
 
 		fillArrayWithZeros(keyChar);
-
+		//Main Menu
 		cout << " ========================================" << endl;
 		cout << "              Choose an option           " << endl;
 		cout << " ========================================" << endl;
