@@ -1,3 +1,18 @@
+/**
+*
+* Solution to course project # <номер на вариант>
+* Introduction to programming course
+* Faculty of Mathematics and Informatics of Sofia University
+* Winter semester 2022/2023
+*
+* @author Danail Todorov Todorov
+* @idnumber 0MI0600241
+* @compiler VC
+*
+* <Main File>
+*
+*/
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -7,6 +22,7 @@ using namespace std;
 const int CAPACITY = 1024;
 const int MAX_SIZE = 1024;
 const int MAX_STUDENTS = 10;
+const int MAX_CAPACITY = 50;
 
 
 struct Subject
@@ -87,35 +103,70 @@ void validation(int (*func) (char*), char* myArr)
 	}
 }
 
-void validationForSubjects(char* numberOfSubjectsChar, int &numberOfSubjectsInt)
+void validationForSubjects(char* numberOfSubjectsChar, int& numberOfSubjectsInt)
 {
 	int lengthOfSubChar = numberOfLetters(numberOfSubjectsChar);
 	numberOfSubjectsInt = atoi(numberOfSubjectsChar);
-	while (numberOfSubjectsInt != 10 && lengthOfSubChar != 1)
+	while ((numberOfSubjectsInt < 1 || numberOfSubjectsInt > 10) || lengthOfSubChar != 1 || (lengthOfSubChar == 2 && numberOfSubjectsInt != 10))
 	{
 		cout << " You can enter between 1 and 10 subjects!" << endl;
 		cout << " How many subjects do you want to add? - ";
 		cin >> numberOfSubjectsChar;
+		cin.ignore();
 		numberOfSubjectsInt = atoi(numberOfSubjectsChar);
 		lengthOfSubChar = numberOfLetters(numberOfSubjectsChar);
 	}
 }
 
-void validationForGrade(string grade, double &normalGrade)
+int lengthBeforeDot(string grade)
+{
+	int lengthGrade = grade.length();
+	int counter = 0;
+	for (int i = 0; i < lengthGrade; i++)
+	{
+		if (grade[i] == '.' || grade[i] == ',')
+		{
+			break;
+		}
+		counter++;
+	}
+	return counter;
+}
+
+bool isValidDecimal(string decimalChar, int lengthOfGrade)
+{
+	if ((decimalChar[0] < '2' || decimalChar[0] > '5') || decimalChar[1] != '.' && decimalChar[1] != ',')
+	{
+		return false;
+	}
+	for (int i = 2; i < lengthOfGrade; i++)
+	{
+		if (decimalChar[i] < '0' || decimalChar[i] > '9')
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void validationForGrade(string grade, double& normalGrade)
 {
 	int lengthOfGrade = grade.length();
-	for (int i = 0; i < lengthOfGrade; i++)
+	int lengthBeforeTheDot = lengthBeforeDot(grade);
+	bool isValidDec = isValidDecimal(grade, lengthOfGrade);
+	normalGrade = stod(grade);
+
+	if (normalGrade == 6)
 	{
-		if ((grade[i] < '0' || grade[i] > '9') && (grade[i] != '.' && grade[i] != ','))
-		{
-			cout << " The grade must not contain special symbols or characters!" << endl;
-			cout << " Grade: ";
-			getline(cin, grade);
-		}
-		if (grade[i] == ',')
-		{
-			grade[i] = '.';
-		}
+		return;
+	}
+	if (!isValidDec)
+	{
+		cout << " The grade must not contain special symbols or characters!" << endl;
+		cout << " Grade: ";
+		getline(cin, grade);
+		lengthOfGrade = grade.length();
+		lengthBeforeTheDot = lengthBeforeDot(grade);
 	}
 	normalGrade = stod(grade);
 }
@@ -260,8 +311,8 @@ void writeIntoFile(Student* stud, int index, int group, bool append = true, int 
 			currentDocument.open(path, ios::out);
 		}
 	}
-	
-	directlyWritten(currentDocument, index, stud ,numberOfSubjects);
+
+	directlyWritten(currentDocument, index, stud, numberOfSubjects);
 	currentDocument.close();
 }
 
@@ -472,6 +523,7 @@ void deleteFromFile(Student* stud, int group, char* facultyNum)//tva mi raboti s
 		}
 	}
 	copyStructs(stud, newArray);
+	currentDocument.close();
 }
 
 bool isTheFirstFacultyNumBigger(char* firstArr, char* secArr)
@@ -516,30 +568,35 @@ void whereToWrite(int numberOfStudentsInFile, bool isTheFirstStudent, int group,
 	}
 }
 
-void sortArrays(Student* stud, int group, bool ascending = true)
+void SortingStudents(bool ascending, int i, int numberStudents, Student* studentArr)
+{
+	for (int j = i + 1; j < numberStudents; j++)
+	{
+		if (ascending)
+		{
+			if (isTheFirstFacultyNumBigger(studentArr[i].facultyNum, studentArr[j].facultyNum))
+			{
+				swapStudents(studentArr[i], studentArr[j]);
+			}
+		}
+		else
+		{
+			if (!isTheFirstFacultyNumBigger(studentArr[i].facultyNum, studentArr[j].facultyNum))
+			{
+				swapStudents(studentArr[i], studentArr[j]);
+			}
+		}
+
+	}
+}
+
+void sortArraysFacultyNum(Student* stud, int group = 0, bool ascending = true)
 {
 	bool isTheFirstStudent = true;
 	int numberOfStudentsInFile = howManyStudentsInFile(stud);
 	for (int i = 0; i < numberOfStudentsInFile - 1; i++)
 	{
-		for (int j = i + 1; j < numberOfStudentsInFile; j++)
-		{
-			if (ascending)
-			{
-				if (isTheFirstFacultyNumBigger(stud[i].facultyNum, stud[j].facultyNum))
-				{
-					swapStudents(stud[i], stud[j]);
-				}
-			}
-			else
-			{
-				if (!isTheFirstFacultyNumBigger(stud[i].facultyNum, stud[j].facultyNum))
-				{
-					swapStudents(stud[i], stud[j]);
-				}
-			}
-			
-		}
+		SortingStudents(ascending, i, numberOfStudentsInFile, stud);
 	}
 	whereToWrite(numberOfStudentsInFile, isTheFirstStudent, group, stud);
 }
@@ -564,9 +621,11 @@ void putSomegroupsInOneFile(int* groupArr, int numberOfgroups)
 			index++;
 		}
 	}
+	combinedFile.close();
+	currentDocument.close();
 }
 
-void sortSomegroupsFacultyNum(bool ascending = true)
+void sortMoregroupsFacultyNum(bool ascending = true)
 {
 	fstream combinedFile;
 	combinedFile.open("Sorted_Combined.txt", ios::out);
@@ -574,25 +633,8 @@ void sortSomegroupsFacultyNum(bool ascending = true)
 	int totalNumberOfStudents = howManyStudentsInFile(sortedStudents);
 	for (int i = 0; i < totalNumberOfStudents - 1; i++)
 	{
-		for (int j = i + 1; j < totalNumberOfStudents; j++)
-		{
-			if (ascending)
-			{
-				if (isTheFirstFacultyNumBigger(sortedStudents[i].facultyNum, sortedStudents[j].facultyNum))
-				{
-					swapStudents(sortedStudents[i], sortedStudents[j]);
-				}
-			}
-			else
-			{
-				if (!isTheFirstFacultyNumBigger(sortedStudents[i].facultyNum, sortedStudents[j].facultyNum))
-				{
-					swapStudents(sortedStudents[i], sortedStudents[j]);
-				}
-			}
-		}
+		SortingStudents(ascending, i, totalNumberOfStudents, sortedStudents);
 	}
-	int numberOfSubjects = 0;
 	for (int i = 0; i < totalNumberOfStudents; i++)
 	{
 		directlyWritten(combinedFile, i, sortedStudents);
@@ -641,253 +683,263 @@ void sortArraysAverageGrade(Student* stud, int group = 0, bool ascending = true)
 	whereToWrite(numberOfStudentsInFile, isTheFirstStudent, group, stud);
 }
 
-void validationForGroup(int lengthOfChar, char* groupChar, int &groupInt)
+void validationForGroup(char* groupChar, int& validatedInt)
 {
-	lengthOfChar = numberOfLetters(groupChar);
-	while ((groupInt < 48 || groupInt > 56) && lengthOfChar != 1)
+	int lengthOfChar = numberOfLetters(groupChar);
+	validatedInt = atoi(groupChar);
+	while ((validatedInt < 1 || validatedInt > 8) || lengthOfChar != 1)
 	{
 		cout << " The group must be between 1 and 8." << endl;
 		cout << " Group: ";
 		cin >> groupChar;
 		cin.ignore();
-		groupInt = atoi(groupChar);
+		validatedInt = atoi(groupChar);
 		lengthOfChar = numberOfLetters(groupChar);
 	}
-	groupInt = atoi(groupChar);
+}
+
+void validationForMethodAndCriteria(char* optionArr, int& option)
+{
+	int lengthOfArr = numberOfLetters(optionArr);
+	option = atoi(optionArr);
+	while ((option != 1 && option != 2) || lengthOfArr != 1)
+	{
+		cout << " The number must be 1 or 2. Try again! - ";
+		cin >> optionArr;
+		cin.ignore();
+		lengthOfArr = numberOfLetters(optionArr);
+		option = atoi(optionArr);
+	}
+}
+
+void validateMenuOption(char* numberOfStudentsChar, int& numberOfStudentsInt)
+{
+	int lengthOfChar = numberOfLetters(numberOfStudentsChar);
+
+	while (numberOfStudentsInt < 1 || lengthOfChar != 1)
+	{
+		cout << " How many students do you want to add? - ";
+		cin >> numberOfStudentsChar;
+		cin.ignore();
+		numberOfStudentsInt = atoi(numberOfStudentsChar);
+		lengthOfChar = numberOfLetters(numberOfStudentsChar);
+	}
+}
+
+void SuccessfulExit()
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
+	cout << " Successfully sorted!" << endl;
+	Sleep(1000);
+	system("cls");
+}
+
+void wayOfSorting(char* charArr, int& option1, int& option2)
+{
+	cout << " How do you want to sort it?" << endl;
+	cout << " Option 1 - Faculty number" << endl;
+	cout << " Option 2 - Average grade" << endl;
+	cout << " ";
+	cin.getline(charArr, CAPACITY * 5);
+	validationForMethodAndCriteria(charArr, option1);
+	cout << " In which order do you want to sort?" << endl;
+	cout << " Option 1 - Ascending" << endl;
+	cout << " Option 2 - Descending" << endl;
+	cout << " ";
+	cin.getline(charArr, CAPACITY * 5);
+	validationForMethodAndCriteria(charArr, option2);
+}
+
+void optionsAG(int& optionFNorAG, int& optionAorD, Student* arrStudents, int validatedInt)
+{
+	if (optionFNorAG == 2 && optionAorD == 2)
+	{
+		sortArraysAverageGrade(arrStudents, validatedInt, false);
+	}
+	else if (optionFNorAG == 2 && optionAorD == 1)
+	{
+		sortArraysAverageGrade(arrStudents, validatedInt);
+	}
+}
+
+void mainMenu()
+{
+	cout << " ========================================" << endl;
+	cout << "              Choose an option           " << endl;
+	cout << " ========================================" << endl;
+	cout << " 1 - Enter Student Information" << endl;
+	cout << " 2 - Delete student" << endl;
+	cout << " 3 - Display a group of students" << endl;
+	cout << " 4 - Sort a current group" << endl;
+	cout << " 5 - Sort more than one groups" << endl;
+	cout << " 6 - Exit" << endl;
+	cout << " ========================================" << endl;
+}
+
+void validatingKey(int& key, char* validationChar)
+{
+	int lenghtOfKey = 0;
+	while ((key < 1 || key > 6) || lenghtOfKey != 1)
+	{
+		cout << " The number must be between 1 and 6" << endl;
+		cout << " ";
+		cin.getline(validationChar, CAPACITY);
+		lenghtOfKey = numberOfLetters(validationChar);
+		key = atoi(validationChar);
+	}
+}
+
+void SleepAndDelete()
+{
+	Sleep(1000);
+	system("cls");
+}
+
+void InputStudentInformation(char* charValidation, Student* studentArr, int& numStud, int& validatedInt, string studOrder, int& numberOfSubjects)
+{
+	validateMenuOption(charValidation, numStud);
+	cout << endl;
+	for (int i = 0; i < numStud; i++)
+	{
+		studOrder = " Student " + to_string(i + 1) + ":";
+		cout << studOrder << endl;
+		cout << endl;
+		cout << " Group: ";
+		cin.getline(charValidation, CAPACITY);
+		validationForGroup(charValidation, validatedInt);
+		studentArr = getDocument(validatedInt);
+		int totalStudentsInFile = howManyStudentsInFile(studentArr);
+		inputStud(studentArr, totalStudentsInFile, validatedInt, numberOfSubjects);
+		writeIntoFile(studentArr, totalStudentsInFile, validatedInt, numberOfSubjects);
+	}
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
+	cout << " Students added successfully!" << endl;
+	SleepAndDelete();
+}
+
+void DeleteStudent(char* CharArrForValidation, int& validatedInt, Student* arrStudents)
+{
+	cout << " From which group do you want to remove the student? - ";
+	cin.getline(CharArrForValidation, CAPACITY);
+	validationForGroup(CharArrForValidation, validatedInt);
+	arrStudents = getDocument(validatedInt);
+	cout << " Faculty number: ";
+	cin.getline(CharArrForValidation, MAX_SIZE);
+	deleteFromFile(arrStudents, validatedInt, CharArrForValidation);
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
+	cout << " The student is deleted successfully!";
+	SleepAndDelete();
+
+}
+
+void DisplayGroup(char* CharArrForValidation, int& validatedInt)
+{
+	cout << " Which group do you want to see? - ";
+	cin.getline(CharArrForValidation, CAPACITY);
+	validationForGroup(CharArrForValidation, validatedInt);
+	readFromFile(validatedInt);
+	cout << " ";
+	system("pause");
+	system("cls");
+}
+
+void SortOneGroup(char* CharArrForValidation, int& validatedInt, int& optionFNorAG, int& optionAorD, Student* arrStudents)
+{
+	cout << " Which group do you want to sort? - ";
+	cin.getline(CharArrForValidation, CAPACITY);
+	validationForGroup(CharArrForValidation, validatedInt);
+	wayOfSorting(CharArrForValidation, optionFNorAG, optionAorD);
+	arrStudents = getDocument(validatedInt);
+	optionsAG(optionFNorAG, optionAorD, arrStudents, validatedInt);
+	if (optionFNorAG == 1 && optionAorD == 1)
+	{
+		sortArraysFacultyNum(arrStudents, validatedInt);
+
+	}
+	else if (optionFNorAG == 1 && optionAorD == 2)
+	{
+		sortArraysFacultyNum(arrStudents, validatedInt, false);
+	}
+	SuccessfulExit();
+}
+
+void SortSeveralGroups(char* CharArrForValidation, int& validatedInt, int* arrayWithgroups, int& optionFNorAG, int& optionAorD)
+{
+	cout << " How many groups do you want to sort? - ";
+	cin.getline(CharArrForValidation, CAPACITY);
+	validationForGroup(CharArrForValidation, validatedInt);
+	for (int i = 0; i < validatedInt; i++)
+	{
+		cout << " Group: ";
+		cin.getline(CharArrForValidation, CAPACITY);
+		validationForGroup(CharArrForValidation, arrayWithgroups[i]);
+	}
+	putSomegroupsInOneFile(arrayWithgroups, validatedInt);
+	wayOfSorting(CharArrForValidation, optionFNorAG, optionAorD);
+	optionsAG(optionFNorAG, optionAorD, sortedStudents, 0);
+	if (optionFNorAG == 1 && optionAorD == 1)
+	{
+		sortMoregroupsFacultyNum();
+	}
+	else if (optionFNorAG == 1 && optionAorD == 2)
+	{
+		sortMoregroupsFacultyNum(false);
+	}
+	readFromFile();
+	cout << " ";
+	system("pause");
+	system("cls");
+}
+
+void ExitTheProgram()
+{
+	system("cls");
+	cout << endl;
+	cout << " Thank you for using our platform!";
+	cout << endl;
+	Sleep(2000);
+	exit(0);
 }
 
 int main()
 {
 	saveTheDataToEverygroup();
 	int key = 0;
-	char keyChar[10]{};
+	char keyChar[MAX_CAPACITY]{};
+	char CharArrForValidation[MAX_CAPACITY]{};
+	int numberOfStudentsInt = 0, numberOfSubjects = 0;
+	Student* arrStudents = {};
+	int optionFNorAG = 0, optionAorD = 0, validatedInt = 0;
+	string numberStud = "";
+	int arrayWithgroups[MAX_CAPACITY]{};
 
 	while (key != 6)
 	{
 		system("Color 07");
+		fillArrayWithZeros(CharArrForValidation);
+		mainMenu();
+		validatingKey(key, CharArrForValidation);
 
-		fillArrayWithZeros(keyChar);
-		//Main Menu
-		cout << " ========================================" << endl;
-		cout << "              Choose an option           " << endl;
-		cout << " ========================================" << endl;
-		cout << " 1 - Enter Student Information" << endl;
-		cout << " 2 - Delete student" << endl;
-		cout << " 3 - Display a group of students" << endl;
-		cout << " 4 - Sort a current group" << endl;
-		cout << " 5 - Sort more than one groups" << endl;
-		cout << " 6 - Exit" << endl;
-		cout << " ========================================" << endl;
-		int lenghtOfKey = 0;
-		while ((key < 1 || key > 8) || lenghtOfKey != 1)
-		{
-			cout << " The number must be between 1 and 6" << endl;
-			cout << " ";
-			cin >> keyChar;
-			cin.ignore();
-			lenghtOfKey = numberOfLetters(keyChar);
-			key = atoi(keyChar);
-		}
-		char numberOfStudentsChar[10]{};
-		int numberOfStudentsInt = 0;
-		int numberOfSubjects = 0;
-		int studentsRemoved = 0;
-		int groupForRemoval = 0;
-		Student* document = {};
-		char facultyNumber[50]{};
-		int optionFNorAG = 0;
-		int optionAorD = 0;
-		char groupChar[10]{};
-		int groupInt = 0;
-		string order;
-		int arrayWithgroups[10]{};
-		int numberOfgroups = 0;
-		string numberStud = "";
-		int lengthOfChar = 0;
 		switch (key)
 		{
 		case 1:
-			while (numberOfStudentsInt == 0)
-			{
-				cout << " How many students do you want to add? - ";
-				cin >> numberOfStudentsChar;
-				cin.ignore();
-				numberOfStudentsInt = atoi(numberOfStudentsChar);
-			}
-			cout << endl;
-			for (int i = 0; i < numberOfStudentsInt; i++)
-			{
-				numberStud = " Student " + to_string(i + 1) + ":";
-				cout << numberStud << endl;
-				cout << endl;
-				cout << " Group: ";
-				cin >> groupChar;
-				cin.ignore();
-				validationForGroup(lengthOfChar, groupChar, groupInt);
-				document = getDocument(groupInt);
-				int totalStudentsInFile = howManyStudentsInFile(document);
-				inputStud(document, totalStudentsInFile, groupInt, numberOfSubjects);
-				writeIntoFile(document, totalStudentsInFile, groupInt, numberOfSubjects);
-			}
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-			cout << " Students added successfully!" << endl;
-			Sleep(1000);
-			system("cls");
+			InputStudentInformation(CharArrForValidation, arrStudents, numberOfStudentsInt, validatedInt, numberStud, numberOfSubjects);
 			break;
 		case 2:
-			cout << " From which group do you want to remove the student? - ";
-			cin >> groupChar;
-			validationForGroup(lengthOfChar, groupChar, groupForRemoval);
-			document = getDocument(groupForRemoval);
-			cout << " Faculty number: ";
-			cin.getline(facultyNumber, MAX_SIZE);
-			deleteFromFile(document, groupForRemoval, facultyNumber);
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-			cout << " The student is deleted successfully!";
-			Sleep(1000);
-			system("cls");
+			DeleteStudent(CharArrForValidation, validatedInt, arrStudents);
 			break;
 		case 3:
-			cout << " Which group do you want to see? - ";
-			cin >> groupChar;
-			validationForGroup(lengthOfChar, groupChar, groupInt);
-			readFromFile(groupInt);
-			cout << " ";
-			system("pause");
-			system("cls");
+			DisplayGroup(CharArrForValidation, validatedInt);
 			break;
 		case 4:
-			cout << " Which group do you want to sort? - ";
-			cin >> groupChar;
-			validationForGroup(lengthOfChar, groupChar, groupInt);
-			cout << " How do you want to sort it?" << endl;
-			cout << " Option 1 - Faculty number" << endl;
-			cout << " Option 2 - Average grade" << endl;
-			cout << " ";
-			cin >> optionFNorAG;
-			cin.ignore();
-			while (optionFNorAG != 1 && optionFNorAG != 2)
-			{
-				cout << " The number must be 1 or 2. Try again! - ";
-				cin >> optionFNorAG;
-				cin.ignore();
-			}
-			cout << " In which order do you want to sort?" << endl;
-			cout << " Option 1 - Ascending" << endl;
-			cout << " Option 2 - Descending" << endl;
-			cout << " ";
-			cin >> optionAorD;
-			cin.ignore();
-			while (optionAorD != 1 && optionAorD != 2)
-			{
-				cout << " The number must be 1 or 2. Try again! - ";
-				cin >> optionAorD;
-				cin.ignore();
-			}
-			document = getDocument(groupInt);
-			if (optionFNorAG == 2 && optionAorD == 2)
-			{
-				sortArraysAverageGrade(document, groupInt, false);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "The group is sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			else if (optionFNorAG == 2 && optionAorD == 1)
-			{
-				sortArraysAverageGrade(document, groupInt);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "The group is sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			else if (optionFNorAG == 1 && optionAorD == 1)
-			{
-				sortArrays(document, groupInt);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "The group is sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			else if (optionFNorAG == 1 && optionAorD == 2)
-			{
-				sortArrays(document, groupInt, false);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "The group is sorted successfully!" << endl;
-				Sleep(1000);
-			}
+			SortOneGroup(CharArrForValidation, validatedInt, optionFNorAG, optionAorD, arrStudents);
 			break;
 		case 5:
-			cout << " How many groups do you want to sort? - ";
-			cin >> groupChar;
-			cin.ignore();
-			validationForGroup(lengthOfChar, groupChar, numberOfgroups);
-			for (int i = 0; i < numberOfgroups; i++)
-			{
-				cout << " ";
-				cin >> arrayWithgroups[i];
-			}
-			cin.ignore();
-			putSomegroupsInOneFile(arrayWithgroups, numberOfgroups);
-			cout << " How do you want to sort it?" << endl;
-			cout << " Option 1 - Faculty number" << endl;
-			cout << " Option 2 - Average grade" << endl;
-			cout << " ";
-			cin >> optionFNorAG;
-			cin.ignore();
-			while (optionFNorAG != 1 && optionFNorAG != 2)
-			{
-				cout << "The number must 1 or 2. Try again! - ";
-				cin >> optionFNorAG;
-				cin.ignore();
-			}
-			cout << " In which order do you want to sort?" << endl;
-			cout << " Option 1 - Ascending" << endl;
-			cout << " Option 2 - Descending" << endl;
-			cout << " ";
-			cin >> optionAorD;
-			cin.ignore();
-			while (optionAorD != 1 && optionAorD != 2)
-			{
-				cout << " The number must 1 or 2. Try again! - ";
-				cin >> optionAorD;
-				cin.ignore();
-			}
-			if (optionFNorAG == 2 && optionAorD == 2)
-			{
-				sortArraysAverageGrade(sortedStudents, 0, false);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "Sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			else if (optionFNorAG == 2 && optionAorD == 1)
-			{
-				sortArraysAverageGrade(sortedStudents);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "Sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			else if (optionFNorAG == 1 && optionAorD == 1)
-			{
-				sortSomegroupsFacultyNum();
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "Sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			else if (optionFNorAG == 1 && optionAorD == 2)
-			{
-				sortSomegroupsFacultyNum(false);
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 2);
-				cout << "Sorted successfully!" << endl;
-				Sleep(1000);
-			}
-			readFromFile();
+			SortSeveralGroups(CharArrForValidation, validatedInt, arrayWithgroups, optionFNorAG, optionAorD);
 			break;
 
 		case 6:
-			system("cls");
-			cout << endl;
-			cout << " Thank you for using our platform!";
-			cout << endl;
-			Sleep(2000);
-			exit(0);
+			ExitTheProgram();
 			break;
 		default:
 			break;
