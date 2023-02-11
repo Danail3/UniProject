@@ -51,6 +51,15 @@ Student studentsGroup7[MAX_STUDENTS];
 Student studentsGroup8[MAX_STUDENTS];
 Student sortedStudents[MAX_SIZE];
 
+void isOpen(fstream& Document)
+{
+	if (!Document.is_open())
+	{
+		cout << " Error!" << endl;
+		return;
+	}
+}
+
 int numberOfLetters(char* arr1)
 {
 	int counter = 0;
@@ -134,15 +143,19 @@ int lengthBeforeDot(string grade)
 	return counter;
 }
 
-bool isValidDecimal(string decimalChar, int lengthOfGrade)
+bool isValidDecimal(int lengthOfGrade, string grade)
 {
-	if ((decimalChar[0] < '2' || decimalChar[0] > '6') || (decimalChar[1] != '.' && decimalChar[1] != ','))
+	for (int i = 0; i < lengthOfGrade; i++)
 	{
-		return false;
-	}
-	for (int i = 2; i < lengthOfGrade; i++)
-	{
-		if (decimalChar[i] < '0' || decimalChar[i] > '9')
+		if (i == 0 && (grade[i] < '2' || grade[i] > '6'))
+		{
+			return false;
+		}
+		else if (i == 1 && (grade[i] != '.' && grade[i] != ','))
+		{
+			return false;
+		}
+		else if (i > 1 && grade[i] < '0' || grade[i] > '9')
 		{
 			return false;
 		}
@@ -153,26 +166,16 @@ bool isValidDecimal(string decimalChar, int lengthOfGrade)
 void validationForGrade(string grade, double& normalGrade)
 {
 	int lengthOfGrade = grade.length();
+	bool isValidDec = isValidDecimal(lengthOfGrade, grade);
 	int lengthBeforeTheDot = lengthBeforeDot(grade);
-	bool isValidDec = isValidDecimal(grade, lengthOfGrade);
-	normalGrade = stod(grade);
-	if ((lengthOfGrade == 1 && (normalGrade >= 2 || normalGrade <= 6)))
-	{
-		return;
-	}
-	while (!isValidDec || (lengthOfGrade == 1 && (normalGrade < 2 || normalGrade > 6)))
+	while (!isValidDec)
 	{
 		cout << " The grade must not contain special symbols or characters or it must be between 2 and 6!" << endl;
 		cout << " Grade: ";
 		getline(cin, grade);
 		lengthOfGrade = grade.length();
 		lengthBeforeTheDot = lengthBeforeDot(grade);
-		isValidDec = isValidDecimal(grade, lengthOfGrade);
-		normalGrade = stod(grade);
-		if ((lengthOfGrade == 1 && (normalGrade >= 2 || normalGrade <= 6)))
-		{
-			return;
-		}
+		isValidDec = isValidDecimal(lengthOfGrade, grade);
 	}
 	normalGrade = stod(grade);
 }
@@ -443,10 +446,6 @@ void saveTheDataFromTheFiles(Student* stud, int group)
 		}
 		currentDocument.close();
 	}
-	else
-	{
-		isOpen(currentDocument);
-	}
 }
 
 //Counting how many students are already written in the file
@@ -622,22 +621,12 @@ void sortArraysFacultyNum(Student* stud, int group = 0, bool ascending = true)
 	whereToWrite(numberOfStudentsInFile, isTheFirstStudent, group, stud);
 }
 
-void isOpen(fstream& Document)
-{
-	if (!Document.is_open())
-	{
-		cout << " Error!" << endl;
-		return;
-	}
-}
-
 void putSomegroupsInOneFile(int* groupArr, int numberOfgroups)
 {
 	fstream combinedFile;
 	fstream currentDocument;
 	int index = 0;
 	combinedFile.open("Sorted_Combined.txt", ios::out);
-	isOpen(combinedFile);
 	for (int i = 0; i < numberOfgroups; i++)
 	{
 		string path = "";
@@ -661,7 +650,6 @@ void sortMoregroupsFacultyNum(bool ascending = true)
 {
 	fstream combinedFile;
 	combinedFile.open("Sorted_Combined.txt", ios::out);
-	isOpen(combinedFile);
 	int index = 0;
 	int totalNumberOfStudents = howManyStudentsInFile(sortedStudents);
 	for (int i = 0; i < totalNumberOfStudents - 1; i++)
@@ -719,16 +707,15 @@ void sortArraysAverageGrade(Student* stud, int group = 0, bool ascending = true)
 void validationForGroup(char* groupChar, int& validatedInt)
 {
 	int lengthOfChar = numberOfLetters(groupChar);
-	validatedInt = atoi(groupChar);
-	while ((validatedInt < 1 || validatedInt > 8) || lengthOfChar != 1)
+	while ((groupChar[0] < '1' || groupChar[0] > '8') || lengthOfChar != 1)
 	{
 		cout << " The group must be between 1 and 8." << endl;
 		cout << " Group: ";
 		cin >> groupChar;
 		cin.ignore();
-		validatedInt = atoi(groupChar);
 		lengthOfChar = numberOfLetters(groupChar);
 	}
+	validatedInt = stoi(groupChar);
 }
 
 void validationForMethodAndCriteria(char* optionArr, int& option)
