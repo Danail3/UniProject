@@ -94,6 +94,7 @@ int validationForFacultyNum(char* facultyNum)
 	return 1;
 }
 
+//Funciton to check all validations
 void validation(int (*func) (char*), char* myArr)
 {
 	while (func(myArr) == 0)
@@ -135,7 +136,7 @@ int lengthBeforeDot(string grade)
 
 bool isValidDecimal(string decimalChar, int lengthOfGrade)
 {
-	if ((decimalChar[0] < '2' || decimalChar[0] > '5') || decimalChar[1] != '.' && decimalChar[1] != ',')
+	if ((decimalChar[0] < '2' || decimalChar[0] > '6') || (decimalChar[1] != '.' && decimalChar[1] != ','))
 	{
 		return false;
 	}
@@ -155,18 +156,23 @@ void validationForGrade(string grade, double& normalGrade)
 	int lengthBeforeTheDot = lengthBeforeDot(grade);
 	bool isValidDec = isValidDecimal(grade, lengthOfGrade);
 	normalGrade = stod(grade);
-
-	if (normalGrade == 6)
+	if ((lengthOfGrade == 1 && (normalGrade >= 2 || normalGrade <= 6)))
 	{
 		return;
 	}
-	if (!isValidDec)
+	while (!isValidDec || (lengthOfGrade == 1 && (normalGrade < 2 || normalGrade > 6)))
 	{
-		cout << " The grade must not contain special symbols or characters!" << endl;
+		cout << " The grade must not contain special symbols or characters or it must be between 2 and 6!" << endl;
 		cout << " Grade: ";
 		getline(cin, grade);
 		lengthOfGrade = grade.length();
 		lengthBeforeTheDot = lengthBeforeDot(grade);
+		isValidDec = isValidDecimal(grade, lengthOfGrade);
+		normalGrade = stod(grade);
+		if ((lengthOfGrade == 1 && (normalGrade >= 2 || normalGrade <= 6)))
+		{
+			return;
+		}
 	}
 	normalGrade = stod(grade);
 }
@@ -218,6 +224,7 @@ void inputStud(Student* stud, int indexStudent, int& group, int& numberOfSubject
 	cout << endl;
 }
 
+//getting the array for the current student group
 Student* getDocument(int group)
 {
 	if (group == 1)
@@ -320,7 +327,7 @@ void readFromFile(int group = 0)
 {
 	string path = "";
 	path = "Group_" + to_string(group) + ".txt";
-	ifstream currentDocument;
+	fstream currentDocument;
 	if (group == 0)
 	{
 		currentDocument.open("Sorted_Combined.txt", ios::in);
@@ -338,6 +345,11 @@ void readFromFile(int group = 0)
 		}
 		currentDocument.close();
 	}
+	else
+	{
+		isOpen(currentDocument);
+	}
+
 }
 
 int returnBiggerNumber(int num1, int num2)
@@ -387,11 +399,12 @@ void WriteTheDataIntoTheStudent(char* getInfoArr, int& indexStart, string line, 
 	indexStart = 0;
 }
 
+//Save already written data into the arrays of structures
 void saveTheDataFromTheFiles(Student* stud, int group)
 {
 	string path = "";
 	path = "Group_" + to_string(group) + ".txt";
-	ifstream currentDocument;
+	fstream currentDocument;
 	currentDocument.open(path, ios::in);
 
 	if (currentDocument.is_open())
@@ -430,8 +443,13 @@ void saveTheDataFromTheFiles(Student* stud, int group)
 		}
 		currentDocument.close();
 	}
+	else
+	{
+		isOpen(currentDocument);
+	}
 }
 
+//Counting how many students are already written in the file
 int howManyStudentsInFile(Student* stud)
 {
 	int counter = 0;
@@ -442,6 +460,7 @@ int howManyStudentsInFile(Student* stud)
 	return counter;
 }
 
+//Compare whether two arrays are the same
 bool areTheCharArraysTheSame(char* arr1, char* arr2)
 {
 	int lengthFirstArr = numberOfLetters(arr1);
@@ -496,6 +515,7 @@ void deleteFromFile(Student* stud, int group, char* facultyNum)//tva mi raboti s
 	path = "Group_" + to_string(group) + ".txt";
 	fstream currentDocument;
 	currentDocument.open(path, ios::out | ios::in);
+	isOpen(currentDocument);
 
 	int counterForStudents = howManyStudentsInFile(stud);
 	Student newArray[10]{};
@@ -552,6 +572,7 @@ void swapStudents(Student& stud1, Student& stud2)
 	stud2 = temp;
 }
 
+//Tell whether it should open the file with ios::app or without
 void whereToWrite(int numberOfStudentsInFile, bool isTheFirstStudent, int group, Student* stud)
 {
 	for (int j = 0; j < numberOfStudentsInFile; j++)
@@ -601,17 +622,28 @@ void sortArraysFacultyNum(Student* stud, int group = 0, bool ascending = true)
 	whereToWrite(numberOfStudentsInFile, isTheFirstStudent, group, stud);
 }
 
+void isOpen(fstream& Document)
+{
+	if (!Document.is_open())
+	{
+		cout << " Error!" << endl;
+		return;
+	}
+}
+
 void putSomegroupsInOneFile(int* groupArr, int numberOfgroups)
 {
 	fstream combinedFile;
 	fstream currentDocument;
 	int index = 0;
 	combinedFile.open("Sorted_Combined.txt", ios::out);
+	isOpen(combinedFile);
 	for (int i = 0; i < numberOfgroups; i++)
 	{
 		string path = "";
 		path = "Group_" + to_string(groupArr[i]) + ".txt";
 		currentDocument.open(path, ios::in);
+		isOpen(currentDocument);
 
 		Student* document = getDocument(groupArr[i]);
 		int numberOfStudents = howManyStudentsInFile(document);
@@ -629,6 +661,7 @@ void sortMoregroupsFacultyNum(bool ascending = true)
 {
 	fstream combinedFile;
 	combinedFile.open("Sorted_Combined.txt", ios::out);
+	isOpen(combinedFile);
 	int index = 0;
 	int totalNumberOfStudents = howManyStudentsInFile(sortedStudents);
 	for (int i = 0; i < totalNumberOfStudents - 1; i++)
